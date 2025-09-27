@@ -1,0 +1,235 @@
+{
+  "id": "00000000-0000-0000-0000-000000000000",
+  "prevId": "",
+  "version": "5",
+  "dialect": "mysql",
+  "tables": {
+    "betting_feeds": {
+      "name": "betting_feeds",
+      "columns": {
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "type": "serial",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "gameId": {
+          "autoincrement": false,
+          "name": "gameId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "season": {
+          "autoincrement": false,
+          "name": "season",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "week": {
+          "autoincrement": false,
+          "name": "week",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "seasonType": {
+          "autoincrement": false,
+          "name": "seasonType",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "gameDate": {
+          "autoincrement": false,
+          "name": "gameDate",
+          "type": "datetime",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "homeTeam": {
+          "autoincrement": false,
+          "name": "homeTeam",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "awayTeam": {
+          "autoincrement": false,
+          "name": "awayTeam",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "homeTeamId": {
+          "autoincrement": false,
+          "name": "homeTeamId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "awayTeamId": {
+          "autoincrement": false,
+          "name": "awayTeamId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "homeTeamScore": {
+          "autoincrement": false,
+          "name": "homeTeamScore",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "awayTeamScore": {
+          "autoincrement": false,
+          "name": "awayTeamScore",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pointSpread": {
+          "autoincrement": false,
+          "name": "pointSpread",
+          "type": "decimal(5,2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "overUnder": {
+          "autoincrement": false,
+          "name": "overUnder",
+          "type": "decimal(5,2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "homeTeamMoneyLine": {
+          "autoincrement": false,
+          "name": "homeTeamMoneyLine",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "awayTeamMoneyLine": {
+          "autoincrement": false,
+          "name": "awayTeamMoneyLine",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated": {
+          "autoincrement": false,
+          "name": "updated",
+          "type": "datetime",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created": {
+          "default": "(CURRENT_TIMESTAMP)",
+          "autoincrement": false,
+          "name": "created",
+          "type": "datetime",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "compositePrimaryKeys": {
+        "betting_feeds_id": {
+          "name": "betting_feeds_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "uniqueConstraints": {
+        "id": {
+          "name": "id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "checkConstraint": {}
+    },
+    "users_table": {
+      "name": "users_table",
+      "columns": {
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "type": "serial",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "username": {
+          "autoincrement": false,
+          "name": "username",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "autoincrement": false,
+          "name": "email",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rep_points": {
+          "autoincrement": false,
+          "name": "rep_points",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "compositePrimaryKeys": {
+        "users_table_id": {
+          "name": "users_table_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "uniqueConstraints": {
+        "id": {
+          "name": "id",
+          "columns": [
+            "id"
+          ]
+        },
+        "users_table_email_unique": {
+          "name": "users_table_email_unique",
+          "columns": [
+            "email"
+          ]
+        }
+      },
+      "checkConstraint": {}
+    }
+  },
+  "views": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "tables": {
+      "betting_feeds": {
+        "columns": {
+          "created": {
+            "isDefaultAnExpression": true
+          }
+        }
+      }
+    },
+    "indexes": {}
+  }
+}
