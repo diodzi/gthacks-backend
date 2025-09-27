@@ -3,9 +3,27 @@ import type { WSContext, WSEvents } from 'hono/ws'
 import { HTTPException } from 'hono/http-exception'
 import { db } from '../db/index.js'
 import { eq } from 'drizzle-orm'
-import { roomsTable } from '../db/schema.js'
+import { roomsTable, usersTable } from '../db/schema.js'
 
 const rooms = new Map<string, Set<WSContext>>()
+
+export async function getRooms(c: Context) {
+  const roomsRes = await db
+    .select({
+      room: {
+        id: roomsTable.id,
+        title: roomsTable.title,
+        viewCount: roomsTable.viewCount,
+      },
+      owner: usersTable,
+    })
+    .from(roomsTable)
+    .leftJoin(usersTable, eq(roomsTable.ownerId, usersTable.id))
+
+  console.log(roomsRes)
+
+  return c.json({ message: 'ok', rooms: roomsRes })
+}
 
 export async function createRoom(c: Context) {
 	const body = await c.req.json<{
