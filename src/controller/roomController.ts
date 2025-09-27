@@ -8,12 +8,20 @@ import { roomsTable } from '../db/schema.js'
 const rooms = new Map<string, Set<WSContext>>()
 
 export async function createRoom(c: Context) {
-	const body = await c.req.json()
-	type InsertResult = { insertId: number }
-	const result = (await db.insert(roomsTable).values(body).$returningId()) as InsertResult[]
-	const id = String(result[0].insertId)
-	rooms.set(id, new Set())
-	return c.json({ ok: true, roomId: id })
+	const body = await c.req.json();
+
+	const result = await db.insert(roomsTable).values({
+		title: body.title,
+		ownerId: body.ownerId ?? 1,
+		gameId: body.gameId ?? null,
+		viewCount: 0,
+	}).execute();
+
+	const id = String((result as any).insertId);
+
+	rooms.set(id, new Set());
+
+	return c.json({ ok: true, roomId: id });
 }
 
 export async function deleteRoom(c: Context) {
