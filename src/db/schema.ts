@@ -8,21 +8,21 @@ import {
 } from 'drizzle-orm/mysql-core'
 
 export const usersTable = mysqlTable('users_table', {
-	id: bigint('id', { mode: 'number' }).primaryKey(),
+	id: bigint('id', { mode: 'number' }).primaryKey().autoincrement(),
 	username: varchar('username', { length: 255 }).notNull(),
 	email: varchar('email', { length: 255 }).notNull().unique(),
 	repPoints: int('rep_points').notNull().default(0),
 })
 
 export const betsTable = mysqlTable('bets_table', {
-	id: bigint('id', { mode: 'number' }).primaryKey(),
+	id: bigint('id', { mode: 'number' }).primaryKey().autoincrement(),
 	name: varchar({ length: 100 }).notNull(),
 	time: datetime({ mode: 'date' }).notNull(),
 	betLine: decimal('bet_line', { precision: 10, scale: 2 }).notNull(),
 })
 
 export const usersBetsTable = mysqlTable('users_bets_table', {
-	id: bigint('id', { mode: 'number' }).primaryKey(),
+	id: bigint('id', { mode: 'number' }).primaryKey().autoincrement(),
 	userId: bigint('user_id', { mode: 'number' })
 		.notNull()
 		.references(() => usersTable.id, { onDelete: 'cascade' }),
@@ -32,7 +32,7 @@ export const usersBetsTable = mysqlTable('users_bets_table', {
 })
 
 export const postsTable = mysqlTable('posts_table', {
-	id: bigint('id', { mode: 'number' }).primaryKey(),
+	id: bigint('id', { mode: 'number' }).primaryKey().autoincrement(),
 	text: varchar('text', { length: 255 }).notNull(),
 	betId: bigint('bet_id', { mode: 'number' })
 		.notNull()
@@ -43,7 +43,7 @@ export const postsTable = mysqlTable('posts_table', {
 })
 
 export const gameTable = mysqlTable('game_table', {
-	id: bigint('id', { mode: 'number' }).primaryKey(),
+	id: bigint('id', { mode: 'number' }).primaryKey().autoincrement(),
 	title: varchar('title', { length: 255 }).notNull(),
 	startTime: datetime('start_time').notNull(),
 })
@@ -58,4 +58,14 @@ export const roomsTable = mysqlTable('rooms_table', {
 		.references(() => gameTable.id, { onDelete: 'cascade' }),
 	title: varchar('title', { length: 255 }).notNull(),
 	viewCount: int('view_count').default(0).notNull(),
+})
+
+export const usersRoomTable = mysqlTable('users_rooms_table', {
+	id: bigint('id', { mode: 'number' }).primaryKey().autoincrement(),
+	userId: bigint('user_id', { mode: 'number' })
+		.notNull()
+		.references(() => usersTable.id, { onDelete: 'cascade' }),
+	roomId: bigint('room_id', { mode: 'number' })
+		.notNull()
+		.references(() => roomsTable.id, { onDelete: 'cascade' }),
 })

@@ -10,6 +10,7 @@ app.post('/room', createRoom)
 app.delete('/room/:id', deleteRoom)
 app.get("/ws/room/:id", upgradeWebSocket(roomSocket));
 
+
 const server = serve(
 	{
 		fetch: app.fetch,
