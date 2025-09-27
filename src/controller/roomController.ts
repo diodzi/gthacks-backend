@@ -8,16 +8,28 @@ import { roomsTable } from '../db/schema.js'
 const rooms = new Map<string, Set<WSContext>>()
 
 export async function createRoom(c: Context) {
-	const body = await c.req.json();
+	const body = await c.req.json<{ title?: string; ownerId?: number; gameId?: number }>();
+
+	if (!body.title || body.title.trim() === "") {
+		return c.json({ error: "Title is required" }, 400);
+	}
+
+	if (!body.ownerId || Number.isNaN(Number(body.ownerId))) {
+		return c.json({ error: "ownerId must be a number" }, 400);
+	}
+
+	if (!body.gameId || Number.isNaN(Number(body.gameId))) {
+		return c.json({ error: "gameId must be a number" }, 400);
+	}
 
 	const result = await db.insert(roomsTable).values({
 		title: body.title,
-		ownerId: body.ownerId ?? 1,
-		gameId: body.gameId ?? null,
+		ownerId: body.ownerId,
+		gameId: body.gameId,
 		viewCount: 0,
-	}).execute();
+	}).$returningId();
 
-	const id = String((result as any).insertId);
+	const id = String(result[0])
 
 	rooms.set(id, new Set());
 

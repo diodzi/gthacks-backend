@@ -50,10 +50,10 @@ export const gameTable = mysqlTable('game_table', {
 
 export const roomsTable = mysqlTable('rooms_table', {
 	id: bigint('id', { mode: 'number' }).primaryKey().autoincrement(),
-	ownerId: bigint('owner_id', { mode: 'bigint' })
+	ownerId: bigint('owner_id', { mode: 'number' })
 		.notNull()
 		.references(() => usersTable.id, { onDelete: 'cascade' }),
-	gameId: bigint('game_id', { mode: 'bigint' })
+	gameId: bigint('game_id', { mode: 'number' })
 		.notNull()
 		.references(() => gameTable.id, { onDelete: 'cascade' }),
 	title: varchar('title', { length: 255 }).notNull(),
