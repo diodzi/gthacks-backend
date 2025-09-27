@@ -21,6 +21,44 @@ app.get('/api/sqlTest', async (c) => {
   })
 })
 
+app.get('/api/leaderboardDaily', async (c) => {
+  const msg = await db.select().from(usersTable)
+
+  const sortedUsers = await db
+    .select()
+    .from(usersTable)
+    .orderBy(desc(usersTable.rep_points));
+
+
+  return c.json({
+    ok: true,
+    message: sortedUsers,
+  })
+})
+
+
+app.get('/api/leaderboardWeekly', async (c) => {
+  const msg = await db.select().from(usersTable)
+
+  console.log(msg)
+
+  return c.json({
+    ok: true,
+    message: msg[0],
+  })
+})
+
+app.get('/api/leaderAllTime', async (c) => {
+  const msg = await db.select().from(usersTable)
+
+  console.log(msg)
+
+  return c.json({
+    ok: true,
+    message: msg[0],
+  })
+})
+
 serve(
   {
     fetch: app.fetch,
