@@ -1,4 +1,4 @@
-import { int, MySqlDecimal, mysqlTable, serial, varchar, decimal } from 'drizzle-orm/mysql-core'
+import { int, MySqlDecimal, mysqlTable, serial, varchar, decimal, bigint, timestamp } from 'drizzle-orm/mysql-core'
 
 export const usersTable = mysqlTable('users_table', {
   userId: serial().primaryKey(),
@@ -11,38 +11,30 @@ export const usersTable = mysqlTable('users_table', {
 export const postsTable = mysqlTable('posts_table', {
   postId: serial().primaryKey(),
   text: varchar({ length: 255 }).notNull(),
-  betId: int('bet_id').notNull().references(() => betsTable.betId, { onDelete: 'cascade' }),
+  betId: bigint('bet_id', {mode: 'number'}).notNull().references(() => betsTable.betId, { onDelete: 'cascade' }),
 
-  userId: int('user_id')
+  userId: bigint('user_id', {mode: 'number'})
     .notNull().references(() => usersTable.userId, { onDelete: 'cascade' }),
-
-  userRep: int('rep_points')
-  .notNull().references(() => usersTable.rep_points, { onDelete: 'cascade' }),
 })
 
 export const betsTable = mysqlTable('bets_table', {
   betId: serial().primaryKey(),
-  betAmount: int(),
+  betAmount: int().notNull(),
 
-  repWinAmnt: int(),
-  repLossAmnt: int(),
+  repWinAmnt: int().notNull(),
+  repLossAmnt: int().notNull(),
 
-  hitPercent: int(),
-  betLine: decimal(),
+  hitPercent: int().notNull(),
+  betLine: decimal().notNull(),
 
   userId: int('user_id')
     .notNull().references(() => usersTable.userId, { onDelete: 'cascade' }),
-
-  userRep: int('user_id')
-  .notNull().references(() => usersTable.rep_points, { onDelete: 'cascade' }),
-
 })
 
 export const gameTable = mysqlTable('bets_table', {
   gameId: serial().primaryKey(),
   title: varchar({ length: 255 }).notNull(),
-  startTime: int()
-
+  startTime: timestamp().notNull()
 })
 
 
