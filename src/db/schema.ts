@@ -22,7 +22,7 @@ export const postsTable = mysqlTable('posts_table', {
 
 export const betsTable = mysqlTable('bets_table', {
   betId: serial().primaryKey(),
-  text: varchar({ length: 255 }).notNull(),
+  betAmount: int(),
 
   repWinAmnt: int(),
   repLossAmnt: int(),
@@ -37,4 +37,12 @@ export const betsTable = mysqlTable('bets_table', {
   .notNull().references(() => usersTable.rep_points, { onDelete: 'cascade' }),
 
 })
+
+export const gameTable = mysqlTable('bets_table', {
+  gameId: serial().primaryKey(),
+  title: varchar({ length: 255 }).notNull(),
+  startTime: int()
+
+})
+
 
