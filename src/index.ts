@@ -1,32 +1,17 @@
-import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
+import { serve } from '@hono/node-server'
+import { createRoom, deleteRoom, roomSocket } from './controller/roomController'
 import { drizzle } from 'drizzle-orm/mysql2'
 import { usersTable } from './db/schema.js'
 import { db } from './db/index.js'
+import { createNodeWebSocket } from '@hono/node-ws'
 
 const app = new Hono()
+const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app })
 
-app.get('/', (c) => {
-  return c.text('Hello Hono!')
-})
+app.post('/room', createRoom)
+app.delete('/room/:id', deleteRoom)
+app.get("/ws/room/:id", upgradeWebSocket(roomSocket));
 
-app.get('/api/sqlTest', async (c) => {
-  const msg = await db.select().from(usersTable)
-
-  console.log(msg)
-
-  return c.json({
-    ok: true,
-    message: msg[0],
-  })
-})
-
-serve(
-  {
-    fetch: app.fetch,
-    port: 3000,
-  },
-  (info) => {
-    console.log(`Server is running on http://localhost:${info.port}`)
-  },
-)
+const server = serve({ fetch: app.fetch, port: 3000 });
+injectWebSocket(server);
