@@ -19,6 +19,18 @@ app.get('/api/users', async (c) => {
   })
 })
 
+app.post('/api/users/create', async (c) => {
+  const body = await c.req.json()
+  const userIds = await db.insert(usersTable).values(body).$returningId()
+
+  console.log(body)
+
+  return c.json({
+    ok: true,
+    message: `successfully added userid ${userIds[0]}`,
+  })
+})
+
 app.get('/api/rooms', async (c) => {
   const msg = await db.select().from(roomsTable)
 
@@ -44,11 +56,13 @@ app.get('/api/room/:id', async (c) => {
 
 app.post('/api/rooms/create', async (c) => {
   const body = await c.req.json()
-  const msg = await db.insert(roomsTable).values(body).$returningId()
+
+  console.log(body)
+  // const msg = await db.insert(roomsTable).values(body).$returningId()
 
   return c.json({
     ok: true,
-    message: msg[0],
+    message: body,
   })
 })
 
