@@ -1,0 +1,25 @@
+-- Create betting_feeds table
+CREATE TABLE IF NOT EXISTS `betting_feeds` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `gameId` int NOT NULL,
+  `season` int NOT NULL,
+  `week` int NOT NULL,
+  `seasonType` varchar(50) NOT NULL,
+  `gameDate` datetime NOT NULL,
+  `homeTeam` varchar(100) NOT NULL,
+  `awayTeam` varchar(100) NOT NULL,
+  `homeTeamId` int NOT NULL,
+  `awayTeamId` int NOT NULL,
+  `homeTeamScore` int DEFAULT NULL,
+  `awayTeamScore` int DEFAULT NULL,
+  `pointSpread` decimal(5,2) DEFAULT NULL,
+  `overUnder` decimal(5,2) DEFAULT NULL,
+  `homeTeamMoneyLine` int DEFAULT NULL,
+  `awayTeamMoneyLine` int DEFAULT NULL,
+  `updated` datetime NOT NULL,
+  `created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_game` (`gameId`),
+  KEY `idx_game_date` (`gameDate`),
+  KEY `idx_season_week` (`season`, `week`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
