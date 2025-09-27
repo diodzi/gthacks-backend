@@ -1,77 +1,25 @@
-import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
-import { roomsTable, usersTable } from './db/schema.js'
-import { db } from './db/index.js'
-import { eq } from 'drizzle-orm'
+import { serve } from '@hono/node-server'
+import { createRoom, deleteRoom, roomSocket } from './controller/roomController.js'
+import { createNodeWebSocket } from '@hono/node-ws'
 
 const app = new Hono()
+const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app })
 
-app.get('/', (c) => {
-  return c.text('Hello Hono!')
-})
+app.post('/room', createRoom)
+app.delete('/room/:id', deleteRoom)
+app.get("/ws/room/:id", upgradeWebSocket(roomSocket));
 
-app.get('/api/users', async (c) => {
-  const msg = await db.select().from(usersTable)
 
-  return c.json({
-    ok: true,
-    message: msg[0],
-  })
-})
-
-app.post('/api/users/create', async (c) => {
-  const body = await c.req.json()
-  const userIds = await db.insert(usersTable).values(body).$returningId()
-
-  console.log(body)
-
-  return c.json({
-    ok: true,
-    message: `successfully added userid ${userIds[0]}`,
-  })
-})
-
-app.get('/api/rooms', async (c) => {
-  const msg = await db.select().from(roomsTable)
-
-  return c.json({
-    ok: true,
-    message: msg[0],
-  })
-})
-
-app.get('/api/room/:id', async (c) => {
-  const roomId = c.req.param('id')
-
-  const msg = await db
-    .select()
-    .from(roomsTable)
-    .where(eq(roomsTable.id, Number(roomId)))
-
-  return c.json({
-    ok: true,
-    message: msg[0],
-  })
-})
-
-app.post('/api/rooms/create', async (c) => {
-  const body = await c.req.json()
-
-  console.log(body)
-  // const msg = await db.insert(roomsTable).values(body).$returningId()
-
-  return c.json({
-    ok: true,
-    message: body,
-  })
-})
-
-serve(
-  {
-    fetch: app.fetch,
-    port: 3000,
-  },
-  (info) => {
-    console.log(`Server is running on http://localhost:${info.port}`)
-  },
+const server = serve(
+	{
+		fetch: app.fetch,
+		port: 3000,
+	},
+	(info) => {
+		console.log(`Server is running on http://localhost:${info.port}`)
+	},
 )
+
+injectWebSocket(server);
+
