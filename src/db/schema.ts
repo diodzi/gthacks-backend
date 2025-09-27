@@ -1,40 +1,35 @@
-import { int, MySqlDecimal, mysqlTable, serial, varchar, decimal, bigint, timestamp } from 'drizzle-orm/mysql-core'
+// db/schema.ts
+import { int, mysqlTable, serial, varchar, decimal, timestamp } from 'drizzle-orm/mysql-core';
 
 export const usersTable = mysqlTable('users_table', {
-  userId: serial().primaryKey(),
-  username: varchar({ length: 255 }).notNull(),
-  email: varchar({ length: 255 }).notNull().unique(),
-  rep_points: int()
-})
-
-
-export const postsTable = mysqlTable('posts_table', {
-  postId: serial().primaryKey(),
-  text: varchar({ length: 255 }).notNull(),
-  betId: bigint('bet_id', {mode: 'number'}).notNull().references(() => betsTable.betId, { onDelete: 'cascade' }),
-
-  userId: bigint('user_id', {mode: 'number'})
-    .notNull().references(() => usersTable.userId, { onDelete: 'cascade' }),
-})
+  id: serial('user_id').primaryKey(),
+  username: varchar('username', { length: 255 }).notNull(),
+  email: varchar('email', { length: 255 }).notNull().unique(),
+  repPoints: int('rep_points').notNull().default(0),
+});
 
 export const betsTable = mysqlTable('bets_table', {
-  betId: serial().primaryKey(),
-  betAmount: int().notNull(),
+  id: serial('bet_id').primaryKey(),
+  betAmount: int('bet_amount').notNull(),
 
-  repWinAmnt: int().notNull(),
-  repLossAmnt: int().notNull(),
+  repWinAmnt: int('rep_win_amount').notNull(),
+  repLossAmnt: int('rep_loss_amount').notNull(),
 
-  hitPercent: int().notNull(),
-  betLine: decimal().notNull(),
-
+  hitPercent: int('hit_percent').notNull(),
+  betLine: decimal('bet_line', { precision: 10, scale: 2 }).notNull(),
   userId: int('user_id')
-    .notNull().references(() => usersTable.userId, { onDelete: 'cascade' }),
-})
+    .notNull().references(() => usersTable.id, { onDelete: 'cascade' }),
+});
 
-export const gameTable = mysqlTable('bets_table', {
-  gameId: serial().primaryKey(),
-  title: varchar({ length: 255 }).notNull(),
-  startTime: timestamp().notNull()
-})
+export const postsTable = mysqlTable('posts_table', {
+  id: serial('post_id').primaryKey(),
+  text: varchar('text', { length: 255 }).notNull(),
+  betId: int('bet_id').notNull().references(() => betsTable.id, { onDelete: 'cascade' }),
+  userId: int('user_id').notNull().references(() => usersTable.id, { onDelete: 'cascade' }),
+});
 
-
+export const gameTable = mysqlTable('game_table', {
+  gameId: serial('game_id').primaryKey(),
+  title: varchar('title', { length: 255 }).notNull(),
+  startTime: timestamp('start_time').notNull(),
+});
