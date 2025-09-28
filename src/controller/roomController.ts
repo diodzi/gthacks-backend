@@ -5,8 +5,25 @@ import { db } from '../db/index.js'
 import { eq } from 'drizzle-orm'
 import { roomsTable, usersTable } from '../db/schema.js'
 import { sql } from 'drizzle-orm/sql'
+import { PassThrough } from 'stream'
 
 const rooms = new Map<string, Set<WSContext>>()
+
+type message = {
+	userId: number
+	userName: string
+	type: string
+	timeStamp: string
+	message?: string
+	bet?: bet
+}
+
+type bet = {
+	id: number
+	title: string,
+	betLine: number,
+	startTime: string,
+}
 
 export async function getRooms(c: Context) {
 	const roomsRes = await db
@@ -84,11 +101,35 @@ function addClient(roomId: string, ws: WSContext) {
 	rooms.get(roomId)!.add(ws)
 }
 
-function broadcast(roomId: string, message: string, sender: WSContext) {
-	const clients = rooms.get(roomId)
-	if (!clients) return
-	for (const client of clients) {
-		if (client !== sender) client.send(message)
+async function broadcast(roomId: string, message: string, sender: WSContext) {
+	const parsedMessage: message = JSON.parse(message)
+	if (parsedMessage.type === 'start-bet') {
+		const result = await db.select({ room: roomsTable, repPoints: usersTable.repPoints }).from(roomsTable).leftJoin(usersTable, eq(roomsTable.ownerId, usersTable.id)).where(eq(roomsTable.id, Number(roomId)))
+
+		const room = result[0]
+		if (!room) return
+		if (parsedMessage.userId !== room.room.ownerId) {
+			return
+		}
+
+		if (!room.repPoints || room.repPoints < 1000) {
+			return
+		}
+
+		const clients = rooms.get(roomId)
+		if (!clients) return
+
+		for (const client of clients) {
+			client.send(JSON.stringify(parsedMessage))
+		}
+	}
+
+	if (parsedMessage.type === 'message') {
+		const clients = rooms.get(roomId)
+		if (!clients) return
+		for (const client of clients) {
+			client.send(message)
+		}
 	}
 }
 
