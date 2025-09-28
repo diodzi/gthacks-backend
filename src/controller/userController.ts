@@ -24,7 +24,7 @@ export async function getUser(c: Context) {
 }
 
 export async function getUserById(c: Context) {
-  const id = c.req.query('id')
+  const id = c.req.param('id')
 
   if (!id) {
     return c.json({ error: 'No id submitted' }, 400)
