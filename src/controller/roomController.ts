@@ -13,8 +13,9 @@ type message = {
 	userName: string
 	type: string
 	timeStamp: string
+	betType?: string
 	message?: string
-	bet?: bet
+	createBet?: bet
 }
 
 type bet = {
@@ -43,17 +44,17 @@ export async function getRooms(c: Context) {
 }
 
 export async function getRoom(c: Context) {
-  const roomId = c.req.param('id')
+	const roomId = c.req.param('id')
 
-  if (!roomId) {
-    return c.json({ error: 'Room id is required' }, 400)
-  }
-  const roomsRes = await db
-    .select()
-    .from(roomsTable)
-    .where(eq(roomsTable.id, Number(roomId)))
+	if (!roomId) {
+		return c.json({ error: 'Room id is required' }, 400)
+	}
+	const roomsRes = await db
+		.select()
+		.from(roomsTable)
+		.where(eq(roomsTable.id, Number(roomId)))
 
-  return c.json({ message: 'ok', room: roomsRes[0] })
+	return c.json({ message: 'ok', room: roomsRes[0] })
 }
 
 export async function createRoom(c: Context) {
@@ -116,6 +117,10 @@ function addClient(roomId: string, ws: WSContext) {
 	rooms.get(roomId)!.add(ws)
 }
 
+const over = new Map<string, number>()
+const under = new Map<string, number>()
+
+
 async function broadcast(roomId: string, message: string, sender: WSContext) {
 	let parsedMessage: message
 	try {
@@ -144,6 +149,31 @@ async function broadcast(roomId: string, message: string, sender: WSContext) {
 		for (const client of clients) {
 			client.send(JSON.stringify(parsedMessage))
 		}
+	}
+
+	if (parsedMessage.type === 'bet') {
+		const clients = rooms.get(roomId)
+		if (!clients) return
+
+		if (parsedMessage.betType) {
+			if (parsedMessage.betType === "over") {
+				const current = over.get(roomId) ?? 0
+				over.set(roomId, current + 1)
+			}
+
+			if (parsedMessage.betType === "under") {
+				const current = under.get(roomId) ?? 0
+				under.set(roomId, current + 1)
+			}
+
+			const total = (over.get(roomId) ?? 0) + (under.get(roomId) ?? 0)
+			const underPercent = (under.get(roomId) ?? 0) / total
+			const overPercent = (over.get(roomId) ?? 0) / total
+			for (const client of clients) {
+				client.send(JSON.stringify({ under: underPercent, over: overPercent }))
+			}
+		}
+
 	}
 
 	if (parsedMessage.type === 'message') {
