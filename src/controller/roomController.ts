@@ -3,9 +3,8 @@ import type { WSContext, WSEvents } from 'hono/ws'
 import { HTTPException } from 'hono/http-exception'
 import { db } from '../db/index.js'
 import { eq } from 'drizzle-orm'
-import { roomsTable, usersTable } from '../db/schema.js'
+import { gameTable, roomsTable, usersTable } from '../db/schema.js'
 import { sql } from 'drizzle-orm/sql'
-import { PassThrough } from 'stream'
 
 const rooms = new Map<string, Set<WSContext>>()
 
@@ -31,12 +30,14 @@ export async function getRooms(c: Context) {
 			room: {
 				id: roomsTable.id,
 				title: roomsTable.title,
+				gameTitle: gameTable.title,
 				viewCount: roomsTable.viewCount,
 			},
 			owner: usersTable,
 		})
 		.from(roomsTable)
 		.leftJoin(usersTable, eq(roomsTable.ownerId, usersTable.id))
+		.leftJoin(gameTable, eq(roomsTable.gameId, gameTable.id))
 
 	return c.json({ message: 'ok', rooms: roomsRes })
 }
@@ -83,7 +84,7 @@ export async function deleteRoom(c: Context) {
 		const clients = rooms.get(id)
 		if (clients) {
 			for (const client of clients) {
-				client.close(1000, "Room closed")
+				client.close(1000, 'Room closed')
 			}
 			rooms.delete(id)
 		}
@@ -154,13 +155,14 @@ export function roomSocket(c: Context): WSEvents {
 				.where(eq(roomsTable.id, Number(roomId)))
 
 			if (!room) {
-				ws.close(1008, "Room does not exist")
+				ws.close(1008, 'Room does not exist')
 				return
 			}
 
 			addClient(roomId, ws)
 
-			await db.update(roomsTable)
+			await db
+				.update(roomsTable)
 				.set({ viewCount: sql`${roomsTable.viewCount} + 1` })
 				.where(eq(roomsTable.id, Number(roomId)))
 		},
@@ -168,9 +170,10 @@ export function roomSocket(c: Context): WSEvents {
 		onClose: async (_evt, ws) => {
 			removeClient(roomId, ws)
 
-			await db.update(roomsTable)
+			await db
+				.update(roomsTable)
 				.set({ viewCount: sql`${roomsTable.viewCount} - 1` })
 				.where(eq(roomsTable.id, Number(roomId)))
-		}
+		},
 	}
 }
