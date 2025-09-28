@@ -10,229 +10,238 @@ import { sql } from 'drizzle-orm/sql'
 const rooms = new Map<string, Set<WSContext>>()
 
 type message = {
-	userId: number
-	userName: string
-	type: string
-	timeStamp: string
-	betType?: string
-	message?: string
-	createBet?: createBet
-	bet?: bet
+  userId: number
+  userName: string
+  type: string
+  timeStamp: string
+  betType?: string
+  message?: string
+  createBet?: createBet
+  bet?: bet
 }
 
 type createBet = {
-	id: number
-	title: string,
-	betLine: number,
-	startTime: string,
+  id: number
+  title: string
+  betLine: number
+  startTime: string
 }
 
 type bet = {
-	over: number
-	under: number
-
+  over: number
+  under: number
 }
 
 export async function getRooms(c: Context) {
-	const roomsRes = await db
-		.select({
-			room: {
-				id: roomsTable.id,
-				title: roomsTable.title,
-				gameTitle: gameTable.title,
-				viewCount: roomsTable.viewCount,
-			},
-			owner: usersTable,
-		})
-		.from(roomsTable)
-		.leftJoin(usersTable, eq(roomsTable.ownerId, usersTable.id))
-		.leftJoin(gameTable, eq(roomsTable.gameId, gameTable.id))
+  const roomsRes = await db
+    .select({
+      room: {
+        id: roomsTable.id,
+        title: roomsTable.title,
+        gameTitle: gameTable.title,
+        viewCount: roomsTable.viewCount,
+      },
+      owner: usersTable,
+    })
+    .from(roomsTable)
+    .leftJoin(usersTable, eq(roomsTable.ownerId, usersTable.id))
+    .leftJoin(gameTable, eq(roomsTable.gameId, gameTable.id))
 
-	return c.json({ message: 'ok', rooms: roomsRes })
+  return c.json({ message: 'ok', rooms: roomsRes })
 }
 
 export async function getRoom(c: Context) {
-	const roomId = c.req.param('id')
+  const roomId = c.req.param('id')
 
-	if (!roomId) {
-		return c.json({ error: 'Room id is required' }, 400)
-	}
-	const roomsRes = await db
-		.select()
-		.from(roomsTable)
-		.where(eq(roomsTable.id, Number(roomId)))
+  if (!roomId) {
+    return c.json({ error: 'Room id is required' }, 400)
+  }
+  const roomsRes = await db
+    .select()
+    .from(roomsTable)
+    .where(eq(roomsTable.id, Number(roomId)))
 
-	return c.json({ message: 'ok', room: roomsRes[0] })
+  return c.json({ message: 'ok', room: roomsRes[0] })
 }
 
 export async function createRoom(c: Context) {
-	const body = await c.req.json<{
-		title?: string
-		ownerId?: number
-		gameId?: number
-	}>()
+  const body = await c.req.json<{
+    title?: string
+    ownerId?: number
+    gameId?: number
+  }>()
 
-	if (!body.title || body.title.trim() === '') {
-		return c.json({ error: 'Title is required' }, 400)
-	}
+  if (!body.title || body.title.trim() === '') {
+    return c.json({ error: 'Title is required' }, 400)
+  }
 
-	if (!body.ownerId || Number.isNaN(Number(body.ownerId))) {
-		return c.json({ error: 'ownerId must be a number' }, 400)
-	}
+  if (!body.ownerId || Number.isNaN(Number(body.ownerId))) {
+    return c.json({ error: 'ownerId must be a number' }, 400)
+  }
 
-	if (!body.gameId || Number.isNaN(Number(body.gameId))) {
-		return c.json({ error: 'gameId must be a number' }, 400)
-	}
+  if (!body.gameId || Number.isNaN(Number(body.gameId))) {
+    return c.json({ error: 'gameId must be a number' }, 400)
+  }
 
-	const roomIds = await db
-		.insert(roomsTable)
-		.values({
-			title: body.title,
-			ownerId: body.ownerId,
-			gameId: body.gameId,
-			viewCount: 0,
-		})
-		.$returningId()
+  const roomIds = await db
+    .insert(roomsTable)
+    .values({
+      title: body.title,
+      ownerId: body.ownerId,
+      gameId: body.gameId,
+      viewCount: 0,
+    })
+    .$returningId()
 
-	rooms.set(String(roomIds[0].id), new Set())
+  rooms.set(String(roomIds[0].id), new Set())
 
-	return c.json({ ok: true, roomId: roomIds[0].id })
+  return c.json({ ok: true, roomId: roomIds[0].id })
 }
 
 export async function deleteRoom(c: Context) {
-	const id = c.req.param('id')
-	const numID = Number(id)
-	try {
-		await db.delete(roomsTable).where(eq(roomsTable.id, numID))
-		const clients = rooms.get(id)
-		if (clients) {
-			for (const client of clients) {
-				client.close(1000, 'Room closed')
-			}
-			rooms.delete(id)
-		}
-		return c.json({ ok: true })
-	} catch {
-		throw new HTTPException(500, {
-			message: `Unable to delete room with id: ${id}`,
-		})
-	}
+  const id = c.req.param('id')
+  const numID = Number(id)
+  try {
+    await db.delete(roomsTable).where(eq(roomsTable.id, numID))
+    const clients = rooms.get(id)
+    if (clients) {
+      for (const client of clients) {
+        client.close(1000, 'Room closed')
+      }
+      rooms.delete(id)
+    }
+    return c.json({ ok: true })
+  } catch {
+    throw new HTTPException(500, {
+      message: `Unable to delete room with id: ${id}`,
+    })
+  }
 }
 
 function addClient(roomId: string, ws: WSContext) {
-	if (!rooms.has(roomId)) rooms.set(roomId, new Set())
+  if (!rooms.has(roomId)) rooms.set(roomId, new Set())
 
-	rooms.get(roomId)!.add(ws)
+  rooms.get(roomId)!.add(ws)
 }
 
 const over = new Map<string, number>()
 const under = new Map<string, number>()
 
-
 async function broadcast(roomId: string, message: string) {
-	let parsedMessage: message
-	try {
-		parsedMessage = JSON.parse(message)
-	} catch (err) {
-		console.error("Bad JSON:", message, err)
-		return
-	}
+  let parsedMessage: message
+  try {
+    parsedMessage = JSON.parse(message)
+  } catch (err) {
+    console.error('Bad JSON:', message, err)
+    return
+  }
 
-	if (parsedMessage.type === 'start-bet') {
-		const result = await db.select({ room: roomsTable, repPoints: usersTable.repPoints }).from(roomsTable).leftJoin(usersTable, eq(roomsTable.ownerId, usersTable.id)).where(eq(roomsTable.id, Number(roomId)))
+  if (parsedMessage.type === 'start-bet') {
+    const result = await db
+      .select({ room: roomsTable, repPoints: usersTable.repPoints })
+      .from(roomsTable)
+      .leftJoin(usersTable, eq(roomsTable.ownerId, usersTable.id))
+      .where(eq(roomsTable.id, Number(roomId)))
 
-		const room = result[0]
-		if (!room) return
-		if (parsedMessage.userId !== room.room.ownerId) {
-			return
-		}
+    const room = result[0]
+    if (!room) return
+    if (parsedMessage.userId !== room.room.ownerId) {
+      return
+    }
 
-		if (!room.repPoints || room.repPoints < 1000) {
-			return
-		}
+    if (!room.repPoints || room.repPoints < 1000) {
+      return
+    }
 
-		const clients = rooms.get(roomId)
-		if (!clients) return
+    const clients = rooms.get(roomId)
+    if (!clients) return
 
-		for (const client of clients) {
-			client.send(JSON.stringify(parsedMessage))
-		}
-	}
+    console.log(JSON.stringify(parsedMessage))
 
-	if (parsedMessage.type === 'bet') {
-		const clients = rooms.get(roomId)
-		if (!clients) return
+    for (const client of clients) {
+      client.send(JSON.stringify(parsedMessage))
+    }
+  }
 
-		if (parsedMessage.betType) {
-			if (parsedMessage.betType === "over") {
-				const current = over.get(roomId) ?? 0
-				over.set(roomId, current + 1)
-			}
+  if (parsedMessage.type === 'bet') {
+    const clients = rooms.get(roomId)
+    if (!clients) return
 
-			if (parsedMessage.betType === "under") {
-				const current = under.get(roomId) ?? 0
-				under.set(roomId, current + 1)
-			}
+    if (parsedMessage.betType) {
+      if (parsedMessage.betType === 'over') {
+        const current = over.get(roomId) ?? 0
+        over.set(roomId, current + 1)
+      }
 
-			const total = (over.get(roomId) ?? 0) + (under.get(roomId) ?? 0)
-			const underPercent = (under.get(roomId) ?? 0) / total
-			const overPercent = (over.get(roomId) ?? 0) / total
-			for (const client of clients) {
-				client.send(JSON.stringify({ under: underPercent, over: overPercent, type: "bet-updates" }))
-			}
-		}
+      if (parsedMessage.betType === 'under') {
+        const current = under.get(roomId) ?? 0
+        under.set(roomId, current + 1)
+      }
 
-	}
+      const total = (over.get(roomId) ?? 0) + (under.get(roomId) ?? 0)
+      const underPercent = (under.get(roomId) ?? 0) / total
+      const overPercent = (over.get(roomId) ?? 0) / total
+      for (const client of clients) {
+        client.send(
+          JSON.stringify({
+            under: underPercent,
+            over: overPercent,
+            type: 'bet-updates',
+          }),
+        )
+      }
+    }
+  }
 
-	if (parsedMessage.type === 'message') {
-		const clients = rooms.get(roomId)
-		if (!clients) return
-		for (const client of clients) {
-			client.send(message)
-		}
-	}
+  if (parsedMessage.type === 'message') {
+    const clients = rooms.get(roomId)
+    if (!clients) return
+    for (const client of clients) {
+      client.send(message)
+    }
+  }
 }
 
 function removeClient(roomId: string, ws: WSContext) {
-	const clients = rooms.get(roomId)
-	if (!clients) return
-	clients.delete(ws)
+  const clients = rooms.get(roomId)
+  if (!clients) return
+  clients.delete(ws)
 
-	if (clients.size === 0) {
-		rooms.delete(roomId)
-		db.delete(roomsTable).where(eq(roomsTable.id, Number(roomId)))
-	}
+  if (clients.size === 0) {
+    rooms.delete(roomId)
+    db.delete(roomsTable).where(eq(roomsTable.id, Number(roomId)))
+  }
 }
 
 export function roomSocket(c: Context): WSEvents {
-	const roomId = c.req.param('id')
-	return {
-		onOpen: async (_evt, ws) => {
-			const [room] = await db
-				.select()
-				.from(roomsTable)
-				.where(eq(roomsTable.id, Number(roomId)))
+  const roomId = c.req.param('id')
+  return {
+    onOpen: async (_evt, ws) => {
+      const [room] = await db
+        .select()
+        .from(roomsTable)
+        .where(eq(roomsTable.id, Number(roomId)))
 
-			if (!room) {
-				ws.close(1008, 'Room does not exist')
-				return
-			}
+      if (!room) {
+        ws.close(1008, 'Room does not exist')
+        return
+      }
 
-			addClient(roomId, ws)
+      addClient(roomId, ws)
 
-			await db
-				.update(roomsTable)
-				.set({ viewCount: sql`${roomsTable.viewCount} + 1` })
-				.where(eq(roomsTable.id, Number(roomId)))
-		},
-		onMessage: (evt, ws) => broadcast(roomId, String(evt.data)),
-		onClose: async (_evt, ws) => {
-			removeClient(roomId, ws)
+      await db
+        .update(roomsTable)
+        .set({ viewCount: sql`${roomsTable.viewCount} + 1` })
+        .where(eq(roomsTable.id, Number(roomId)))
+    },
+    onMessage: (evt, ws) => broadcast(roomId, String(evt.data)),
+    onClose: async (_evt, ws) => {
+      removeClient(roomId, ws)
 
-			await db
-				.update(roomsTable)
-				.set({ viewCount: sql`${roomsTable.viewCount} - 1` })
-				.where(eq(roomsTable.id, Number(roomId)))
-		},
-	}
+      await db
+        .update(roomsTable)
+        .set({ viewCount: sql`${roomsTable.viewCount} - 1` })
+        .where(eq(roomsTable.id, Number(roomId)))
+    },
+  }
 }
