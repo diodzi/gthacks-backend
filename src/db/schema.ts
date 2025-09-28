@@ -15,6 +15,7 @@ export const usersTable = mysqlTable('users_table', {
   username: varchar('username', { length: 255 }).notNull(),
   email: varchar('email', { length: 255 }).notNull().unique(),
   repPoints: int('rep_points').notNull().default(0),
+  password: varchar('password', { length: 255 }).notNull().default(''),
 })
 
 export const betsTable = mysqlTable(
@@ -96,4 +97,14 @@ export const usersRoomTable = mysqlTable('users_rooms_table', {
   roomId: bigint('room_id', { mode: 'number' })
     .notNull()
     .references(() => roomsTable.id, { onDelete: 'cascade' }),
+})
+
+export const sportsCards = mysqlTable('sports_cards', {
+  id: int().autoincrement().notNull().primaryKey(),
+  userId: varchar({ length: 255 }),
+  title: varchar({ length: 255 }),
+  desc: varchar({ length: 500 }),
+  team1: varchar({ length: 100 }),
+  team2: varchar({ length: 100 }),
+  matchDate: datetime('match_date', { mode: 'string' }),
 })

@@ -1,4 +1,4 @@
-import { mysqlTable, mysqlSchema, AnyMySqlColumn, primaryKey, bigint, varchar, datetime, decimal, foreignKey, int, unique } from "drizzle-orm/mysql-core"
+import { mysqlTable, mysqlSchema, AnyMySqlColumn, primaryKey, bigint, varchar, datetime, decimal, int, foreignKey, unique } from "drizzle-orm/mysql-core"
 import { sql } from "drizzle-orm"
 
 export const betsTable = mysqlTable("bets_table", {
@@ -18,6 +18,19 @@ export const gameTable = mysqlTable("game_table", {
 },
 (table) => [
 	primaryKey({ columns: [table.id], name: "game_table_id"}),
+]);
+
+export const picks = mysqlTable("picks", {
+	id: int().autoincrement().notNull(),
+	userId: varchar({ length: 255 }).notNull(),
+	title: varchar({ length: 255 }).notNull(),
+	desc: varchar({ length: 500 }),
+	team1: varchar({ length: 100 }),
+	team2: varchar({ length: 100 }),
+	matchDate: datetime("match_date", { mode: 'string'}),
+},
+(table) => [
+	primaryKey({ columns: [table.id], name: "picks_id"}),
 ]);
 
 export const postsTable = mysqlTable("posts_table", {
