@@ -178,17 +178,23 @@ async function broadcast(roomId: string, message: string) {
 				under.set(roomId, current + 1)
 			}
 
-			const total = (over.get(roomId) ?? 0) + (under.get(roomId) ?? 0)
-			const underPercent = ((under.get(roomId) ?? 0) / total) * 100
-			const overPercent = ((over.get(roomId) ?? 0) / total) * 100
-			for (const client of clients) {
-				client.send(
-					JSON.stringify({
-						under: underPercent,
-						over: overPercent,
-						type: 'bet-updates',
-					}),
-				)
+			const overCount = over.get(roomId) ?? 0
+			const underCount = under.get(roomId) ?? 0
+			const total = overCount + underCount
+
+			if (total > 0) {
+				const overPercent = Math.round((overCount / total) * 100)
+				const underPercent = 100 - overPercent
+
+				for (const client of clients) {
+					client.send(
+						JSON.stringify({
+							over: overPercent,
+							under: underPercent,
+							type: 'bet-updates',
+						}),
+					)
+				}
 			}
 		}
 	}
