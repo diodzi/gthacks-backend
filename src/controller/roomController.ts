@@ -4,25 +4,24 @@ import { HTTPException } from 'hono/http-exception'
 import { db } from '../db/index.js'
 import { eq } from 'drizzle-orm'
 import { roomsTable, usersTable } from '../db/schema.js'
+import { sql } from 'drizzle-orm/sql'
 
 const rooms = new Map<string, Set<WSContext>>()
 
 export async function getRooms(c: Context) {
-  const roomsRes = await db
-    .select({
-      room: {
-        id: roomsTable.id,
-        title: roomsTable.title,
-        viewCount: roomsTable.viewCount,
-      },
-      owner: usersTable,
-    })
-    .from(roomsTable)
-    .leftJoin(usersTable, eq(roomsTable.ownerId, usersTable.id))
+	const roomsRes = await db
+		.select({
+			room: {
+				id: roomsTable.id,
+				title: roomsTable.title,
+				viewCount: roomsTable.viewCount,
+			},
+			owner: usersTable,
+		})
+		.from(roomsTable)
+		.leftJoin(usersTable, eq(roomsTable.ownerId, usersTable.id))
 
-  console.log(roomsRes)
-
-  return c.json({ message: 'ok', rooms: roomsRes })
+	return c.json({ message: 'ok', rooms: roomsRes })
 }
 
 export async function createRoom(c: Context) {
@@ -81,6 +80,7 @@ export async function deleteRoom(c: Context) {
 
 function addClient(roomId: string, ws: WSContext) {
 	if (!rooms.has(roomId)) rooms.set(roomId, new Set())
+
 	rooms.get(roomId)!.add(ws)
 }
 
@@ -96,6 +96,7 @@ function removeClient(roomId: string, ws: WSContext) {
 	const clients = rooms.get(roomId)
 	if (!clients) return
 	clients.delete(ws)
+
 	if (clients.size === 0) {
 		rooms.delete(roomId)
 		db.delete(roomsTable).where(eq(roomsTable.id, Number(roomId)))
@@ -109,16 +110,26 @@ export function roomSocket(c: Context): WSEvents {
 			const [room] = await db
 				.select()
 				.from(roomsTable)
-				.where(eq(roomsTable.id, Number(roomId)));
+				.where(eq(roomsTable.id, Number(roomId)))
 
 			if (!room) {
-				ws.close(1008, "Room does not exist");
-				return;
+				ws.close(1008, "Room does not exist")
+				return
 			}
 
-			addClient(roomId, ws);
+			addClient(roomId, ws)
+
+			await db.update(roomsTable)
+				.set({ viewCount: sql`${roomsTable.viewCount} + 1` })
+				.where(eq(roomsTable.id, Number(roomId)))
 		},
 		onMessage: (evt, ws) => broadcast(roomId, String(evt.data), ws),
-		onClose: (_evt, ws) => removeClient(roomId, ws),
+		onClose: async (_evt, ws) => {
+			removeClient(roomId, ws)
+
+			await db.update(roomsTable)
+				.set({ viewCount: sql`${roomsTable.viewCount} - 1` })
+				.where(eq(roomsTable.id, Number(roomId)))
+		}
 	}
 }
