@@ -103,7 +103,14 @@ function addClient(roomId: string, ws: WSContext) {
 }
 
 async function broadcast(roomId: string, message: string, sender: WSContext) {
-	const parsedMessage: message = JSON.parse(message)
+	let parsedMessage: message
+	try {
+		parsedMessage = JSON.parse(message)
+	} catch (err) {
+		console.error("Bad JSON:", message, err)
+		return
+	}
+
 	if (parsedMessage.type === 'start-bet') {
 		const result = await db.select({ room: roomsTable, repPoints: usersTable.repPoints }).from(roomsTable).leftJoin(usersTable, eq(roomsTable.ownerId, usersTable.id)).where(eq(roomsTable.id, Number(roomId)))
 
