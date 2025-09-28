@@ -22,3 +22,24 @@ export async function getUser(c: Context) {
 
   return c.json({ message: 'ok', user: usersRes[0] })
 }
+
+export async function getUserById(c: Context) {
+  const id = c.req.query('id')
+
+  if (!id) {
+    return c.json({ error: 'No id submitted' }, 400)
+  }
+
+  const usersRes = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.id, Number(id)))
+
+  if (!usersRes[0]) {
+    return c.json({ error: 'User not found' }, 404)
+  }
+
+  const userWithoutPassword = (({ password, ...object }) => object)(usersRes[0])
+
+  return c.json({ message: 'ok', user: userWithoutPassword })
+}
