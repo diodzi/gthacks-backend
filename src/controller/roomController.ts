@@ -42,6 +42,20 @@ export async function getRooms(c: Context) {
 	return c.json({ message: 'ok', rooms: roomsRes })
 }
 
+export async function getRoom(c: Context) {
+  const roomId = c.req.param('id')
+
+  if (!roomId) {
+    return c.json({ error: 'Room id is required' }, 400)
+  }
+  const roomsRes = await db
+    .select()
+    .from(roomsTable)
+    .where(eq(roomsTable.id, Number(roomId)))
+
+  return c.json({ message: 'ok', room: roomsRes[0] })
+}
+
 export async function createRoom(c: Context) {
 	const body = await c.req.json<{
 		title?: string
