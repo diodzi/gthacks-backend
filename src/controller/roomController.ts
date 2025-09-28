@@ -1,4 +1,5 @@
 import type { Context } from 'hono'
+
 import type { WSContext, WSEvents } from 'hono/ws'
 import { HTTPException } from 'hono/http-exception'
 import { db } from '../db/index.js'
@@ -15,14 +16,21 @@ type message = {
 	timeStamp: string
 	betType?: string
 	message?: string
-	createBet?: bet
+	createBet?: createBet
+	bet?: bet
 }
 
-type bet = {
+type createBet = {
 	id: number
 	title: string,
 	betLine: number,
 	startTime: string,
+}
+
+type bet = {
+	over: number
+	under: number
+
 }
 
 export async function getRooms(c: Context) {
@@ -121,7 +129,7 @@ const over = new Map<string, number>()
 const under = new Map<string, number>()
 
 
-async function broadcast(roomId: string, message: string, sender: WSContext) {
+async function broadcast(roomId: string, message: string) {
 	let parsedMessage: message
 	try {
 		parsedMessage = JSON.parse(message)
@@ -170,7 +178,7 @@ async function broadcast(roomId: string, message: string, sender: WSContext) {
 			const underPercent = (under.get(roomId) ?? 0) / total
 			const overPercent = (over.get(roomId) ?? 0) / total
 			for (const client of clients) {
-				client.send(JSON.stringify({ under: underPercent, over: overPercent }))
+				client.send(JSON.stringify({ under: underPercent, over: overPercent, type: "bet-updates" }))
 			}
 		}
 
@@ -217,7 +225,7 @@ export function roomSocket(c: Context): WSEvents {
 				.set({ viewCount: sql`${roomsTable.viewCount} + 1` })
 				.where(eq(roomsTable.id, Number(roomId)))
 		},
-		onMessage: (evt, ws) => broadcast(roomId, String(evt.data), ws),
+		onMessage: (evt, ws) => broadcast(roomId, String(evt.data)),
 		onClose: async (_evt, ws) => {
 			removeClient(roomId, ws)
 
